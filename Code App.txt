@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Quiz App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .quiz-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .question {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+        .options {
+            margin-bottom: 20px;
+        }
+        .option {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .option:hover {
+            background: #e0e0e0;
+        }
+        .correct {
+            background: #d4edda;
+        }
+        .incorrect {
+            background: #f8d7da;
+        }
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        button {
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .score {
+            text-align: center;
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <h1>Classroom Quiz</h1>
+        <div id="intro">
+            <p>Welcome to our educational quiz! Test your knowledge on various subjects.</p>
+            <button id="start-btn">Start Quiz</button>
+        </div>
+        
+        <div id="quiz" class="hidden">
+            <div class="question" id="question"></div>
+            <div class="options" id="options"></div>
+            <div class="controls">
+                <button id="prev-btn" disabled>Previous</button>
+                <button id="next-btn">Next</button>
+            </div>
+        </div>
+        
+        <div id="results" class="hidden">
+            <div class="score">Your Score: <span id="score">0</span>/<span id="total">0</span></div>
+            <button id="restart-btn">Take Quiz Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Quiz questions - you can expand this
+        const quizQuestions = [
+            {
+                question: "What is the capital of France?",
+                options: ["London", "Berlin", "Paris", "Madrid"],
+                answer: 2
+            },
+            {
+                question: "What is 2 + 2?",
+                options: ["3", "4", "5", "6"],
+                answer: 1
+            },
+            {
+                question: "Which planet is known as the Red Planet?",
+                options: ["Venus", "Mars", "Jupiter", "Saturn"],
+                answer: 1
+            }
+        ];
+
+        // DOM elements
+        const introEl = document.getElementById('intro');
+        const quizEl = document.getElementById('quiz');
+        const resultsEl = document.getElementById('results');
+        const questionEl = document.getElementById('question');
+        const optionsEl = document.getElementById('options');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const scoreEl = document.getElementById('score');
+        const totalEl = document.getElementById('total');
+
+        // Quiz state
+        let currentQuestion = 0;
+        let score = 0;
+        let userAnswers = new Array(quizQuestions.length).fill(null);
+
+        // Start quiz
+        startBtn.addEventListener('click', () => {
+            introEl.classList.add('hidden');
+            quizEl.classList.remove('hidden');
+            showQuestion();
+        });
+
+        // Restart quiz
+        restartBtn.addEventListener('click', () => {
+            resultsEl.classList.add('hidden');
+            introEl.classList.remove('hidden');
+            currentQuestion = 0;
+            score = 0;
+            userAnswers = new Array(quizQuestions.length).fill(null);
+        });
+
+        // Show current question
+        function showQuestion() {
+            const question = quizQuestions[currentQuestion];
+            questionEl.textContent = question.question;
+            
+            optionsEl.innerHTML = '';
+            question.options.forEach((option, index) => {
+                const optionEl = document.createElement('div');
+                optionEl.classList.add('option');
+                optionEl.textContent = option;
+                
+                // Highlight if already answered
+                if (userAnswers[currentQuestion] !== null && userAnswers[currentQuestion] === index) {
+                    optionEl.classList.add(question.answer === index ? 'correct' : 'incorrect');
+                }
+                
+                optionEl.addEventListener('click', () => selectOption(index));
+                optionsEl.appendChild(optionEl);
+            });
+            
+            // Update nav buttons
+            prevBtn.disabled = currentQuestion === 0;
+            nextBtn.textContent = currentQuestion === quizQuestions.length - 1 ? 'Finish' : 'Next';
+        }
+
+        // Select an option
+        function selectOption(index) {
+            // Only allow answering once
+            if (userAnswers[currentQuestion] !== null) return;
+            
+            userAnswers[currentQuestion] = index;
+            const question = quizQuestions[currentQuestion];
+            
+            // Update score if correct
+            if (index === question.answer) {
+                score++;
+            }
+            
+            // Highlight correct/incorrect
+            const options = optionsEl.querySelectorAll('.option');
+            options.forEach((option, i) => {
+                option.classList.remove('correct', 'incorrect');
+                if (i === question.answer) {
+                    option.classList.add('correct');
+                } else if (i === index && index !== question.answer) {
+                    option.classList.add('incorrect');
+                }
+            });
+        }
+
+        // Previous question
+        prevBtn.addEventListener('click', () => {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                showQuestion();
+            }
+        });
+
+        // Next question or finish
+        nextBtn.addEventListener('click', () => {
+            if (currentQuestion < quizQuestions.length - 1) {
+                currentQuestion++;
+                showQuestion();
+            } else {
+                finishQuiz();
+            }
+        });
+
+        // Show results
+        function finishQuiz() {
+            quizEl.classList.add('hidden');
+            resultsEl.classList.remove('hidden');
+            scoreEl.textContent = score;
+            totalEl.textContent = quizQuestions.length;
+        }
+    </script>
+</body>
+</html>
